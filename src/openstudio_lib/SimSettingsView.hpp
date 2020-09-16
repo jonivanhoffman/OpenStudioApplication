@@ -89,6 +89,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   QWidget* createZoneCapacitanceMultipleResearchSpecialWidget();
   QWidget* createRadianceParametersWidget();
   QWidget* createOutputJSONWidget();
+  QWidget* createOutputTableSummaryReportsWidget();
 
   void addField(QGridLayout* gridLayout, int row, int column, QString text, OSComboBox2*& comboBox);
 
@@ -126,6 +127,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   void attachZoneCapacitanceMultipleResearchSpecial();
   void attachRadianceParameters();
   void attachOutputJSON();
+  void attachOutputTableSummaryReports();
 
   void detachAll();
   void detachRunPeriod();
@@ -145,6 +147,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   void detachZoneCapacitanceMultipleResearchSpecial();
   void detachRadianceParameters();
   void detachOutputJSON();
+  void detachOutputTableSummaryReports();
 
   model::Model m_model;
   boost::optional<model::ShadowCalculation> m_shadowCalculation;
@@ -278,6 +281,11 @@ class SimSettingsView : public QWidget, public Nano::Observer
   OSSwitch2* m_json_outputJSON;
   OSSwitch2* m_json_outputCBOR;
   OSSwitch2* m_json_outputMessagePack;
+
+  // Advanced Output
+  // These are extensible groups in the SDK, but we care only about common settings
+  OSSwitch2* m_table_allSummary;
+  OSSwitch2* m_diagnostics_displayExtraWarnings;
 
  signals:
 
