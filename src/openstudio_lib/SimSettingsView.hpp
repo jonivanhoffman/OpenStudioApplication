@@ -90,6 +90,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   QWidget* createRadianceParametersWidget();
   QWidget* createOutputJSONWidget();
   QWidget* createOutputTableSummaryReportsWidget();
+  QWidget* createOutputDiagnosticsWidget();
 
   void addField(QGridLayout* gridLayout, int row, int column, QString text, OSComboBox2*& comboBox);
 
@@ -128,6 +129,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   void attachRadianceParameters();
   void attachOutputJSON();
   void attachOutputTableSummaryReports();
+  void attachOutputDiagnostics();
 
   void detachAll();
   void detachRunPeriod();
@@ -148,6 +150,7 @@ class SimSettingsView : public QWidget, public Nano::Observer
   void detachRadianceParameters();
   void detachOutputJSON();
   void detachOutputTableSummaryReports();
+  void detachOutputDiagnostics();
 
   model::Model m_model;
   boost::optional<model::ShadowCalculation> m_shadowCalculation;

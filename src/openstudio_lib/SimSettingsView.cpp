@@ -40,6 +40,7 @@
 #include "../shared_gui_components/OSSwitch.hpp"
 #include "SchedulesView.hpp"  // ScheduleCalendarWidget, MonthView
 
+#include <algorithm>
 #include <openstudio/model/ConvergenceLimits.hpp>
 #include <openstudio/model/ConvergenceLimits_Impl.hpp>
 #include <openstudio/model/HeatBalanceAlgorithm.hpp>
@@ -316,6 +317,10 @@ void SimSettingsView::createWidgets() {
 
   //******************* OS:Output:Table:SummaryReports *******************
   collapsibleInspector = new CollapsibleInspector("Output Table Summary Reports", createOutputTableSummaryReportsWidget());
+  mainLayout->addWidget(collapsibleInspector);
+
+  //******************* OS:Output:Diagnostics *******************
+  collapsibleInspector = new CollapsibleInspector("Output Diagnostics", createOutputDiagnosticsWidget());
   mainLayout->addWidget(collapsibleInspector);
 
   mainLayout->addStretch();
@@ -1134,6 +1139,25 @@ QWidget* SimSettingsView::createOutputTableSummaryReportsWidget() {
   return widget;
 }
 
+QWidget* SimSettingsView::createOutputDiagnosticsWidget() {
+
+  auto gridLayout = new QGridLayout();
+  gridLayout->setContentsMargins(7, 7, 7, 7);
+  gridLayout->setSpacing(GRID_LAYOUT_SPACING);
+  gridLayout->setAlignment(Qt::AlignLeft);
+
+  int row = 0;
+  int col = 0;
+
+  addField(gridLayout, row, col, "Enable AllSummary Report", m_diagnostics_displayExtraWarnings);
+
+  auto widget = new QWidget();
+  widget->setLayout(gridLayout);
+  widget->hide();
+
+  return widget;
+}
+
 void SimSettingsView::addField(QGridLayout* gridLayout, int row, int column, QString text, OSComboBox2*& comboBox) {
   auto label = new QLabel(text, this);
   label->setFixedWidth(TEXT_FIELD_WIDTH);
@@ -1243,6 +1267,7 @@ void SimSettingsView::attachAll() {
   attachZoneCapacitanceMultipleResearchSpecial();
   attachOutputJSON();
   attachOutputTableSummaryReports();
+  attachOutputDiagnostics();
 }
 
 void SimSettingsView::detachAll() {
@@ -1264,6 +1289,7 @@ void SimSettingsView::detachAll() {
   detachRadianceParameters();
   detachOutputJSON();
   detachOutputTableSummaryReports();
+  detachOutputDiagnostics();
 }
 
 void SimSettingsView::attachRunPeriod() {
@@ -1855,6 +1881,7 @@ void SimSettingsView::attachOutputTableSummaryReports() {
     mo.enableAllSummaryReport();
   }
 
+  // typedef std::function<bool()> BoolGetter
   std::function<bool()> getter = [&mo]() {
     if (mo.summaryReportIndex("AllSummary")) {
       return true;
@@ -1863,25 +1890,59 @@ void SimSettingsView::attachOutputTableSummaryReports() {
     }
   };
 
+  // void bind(const model::ModelObject& modelObject, BoolGetter get, boost::optional<BoolSetter> set = boost::none,
+  //           boost::optional<NoFailAction> reset = boost::none, boost::optional<BasicQuery> isDefaulted = boost::none);
+
+
+  // typedef std::function<void(bool)> BoolSetter;
   std::function<void(bool)> setter = [&mo](bool value) {
     if (value) {
-      return mo.enableAllSummaryReport();
+      mo.enableAllSummaryReport();
     } else if (boost::optional<unsigned> index = mo.summaryReportIndex("AllSummary")) {
-      return mo.removeSummaryReport(index.get());
+      mo.removeSummaryReport(index.get());
     }
   };
 
-  //std::function<bool (model::OutputTableSummaryReports*, bool)> setter =
-  //[](model::OutputTableSummaryReports* t_table, bool value)
-  //{
-  //if (value) {
-  //return t_table->enableAllSummaryReport();
-  //} else if (boost::optional<unsigned> index = t_table->summaryReportIndex("AllSummary")) {
-  //return t_table->removeSummaryReport(index.get());
-  //}
-  //};
-
   m_table_allSummary->bind(mo, getter, setter,
+                           boost::none,  // reset
+                           boost::none   // isDefaulted;
+  );
+}
+
+void SimSettingsView::attachOutputDiagnostics() {
+
+  model::OutputDiagnostics mo = m_model.getUniqueModelObject<model::OutputDiagnostics>();
+
+  // typedef std::function<bool()> BoolGetter
+  std::function<bool()> getter = [&mo]() {
+    auto ks = mo.keys();
+    return std::find_if(ks.begin(), ks.end(),
+                        [](const std::string& k) {
+                          return openstudio::istringEqual(k, "DisplayExtraWarnings");
+                        }
+                       ) != ks.end();
+  };
+
+  // void bind(const model::ModelObject& modelObject, BoolGetter get, boost::optional<BoolSetter> set = boost::none,
+  //           boost::optional<NoFailAction> reset = boost::none, boost::optional<BasicQuery> isDefaulted = boost::none);
+
+
+  // typedef std::function<void(bool)> BoolSetter;
+  std::function<void(bool)> setter = [&mo](bool value) {
+    if (value) {
+      mo.enableDisplayExtraWarnings();
+    } else {
+      auto ks = mo.keys();
+      ks.erase(std::remove_if(ks.begin(), ks.end(),
+                              [](const std::string& k) {
+                                return openstudio::istringEqual(k, "DisplayExtraWarnings");
+                              }),
+               ks.end());
+      mo.setKeys(ks);
+    }
+  };
+
+  m_diagnostics_displayExtraWarnings->bind(mo, getter, setter,
                            boost::none,  // reset
                            boost::none   // isDefaulted;
   );
@@ -2012,6 +2073,10 @@ void SimSettingsView::detachOutputJSON() {
 
 void SimSettingsView::detachOutputTableSummaryReports() {
   m_table_allSummary->unbind();
+}
+
+void SimSettingsView::detachOutputDiagnostics() {
+  m_diagnostics_displayExtraWarnings->unbind();
 }
 
 //***** SLOTS *****
